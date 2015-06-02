@@ -10,31 +10,39 @@ public class CryptoClient {
     public static void main(String[] args) {
         try {
             ObjectInputStream iIS = new ObjectInputStream(new FileInputStream("public.bin"));
-            RSAPublicKey key = (RSAPublicKey) iIS.readObject();
+            RSAPublicKey teachersPublicKey = (RSAPublicKey) iIS.readObject();
 
-            Cipher cipher = Cipher.getInstance("AES");
-            Key myKey = KeyGenerator.getInstance("AES").generateKey();
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ObjectOutputStream oj = new ObjectOutputStream(byteArrayOutputStream);
 
-            cipher.init(Cipher.ENCRYPT_MODE, myKey);
+            Cipher cipher = Cipher.getInstance("RSA");
+            Key mySessionKey = KeyGenerator.getInstance("AES").generateKey(); //symmetric AES Key
 
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ObjectOutput oj = new ObjectOutputStream(out);
-            oj.writeObject(myKey);
-            byte[] toSend = out.toByteArray();
-
-            System.out.println("Writing!");
-
-            //byte[] toSend = cipher.doFinal(myKey);
+            cipher.init(Cipher.ENCRYPT_MODE, teachersPublicKey); // Use the professor's public key to encrypt my key
+            oj.writeObject(mySessionKey);
 
             Socket socket = new Socket("45.50.5.238", 38008);
-            InputStream is = socket.getInputStream();
-            InputStreamReader isr = new InputStreamReader(is);
-            socket.getOutputStream().write(createPacket(toSend, 38008));
 
-            System.out.print(Integer.toHexString(isr.read()));
-            System.out.print(Integer.toHexString(isr.read()));
-            System.out.print(Integer.toHexString(isr.read()));
-            System.out.println(Integer.toHexString(isr.read()));
+            byte[] encipheredKey = cipher.doFinal(byteArrayOutputStream.toByteArray()); //the thing to encrypt is the session key
+            socket.getOutputStream().write(createPacket(encipheredKey, 38008));
+
+            readAndPrint(socket.getInputStream());
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -45,7 +53,6 @@ public class CryptoClient {
 
             //output.writeObject();
 
-            System.out.println(key.toString());
         } catch (Exception e) {
             e.printStackTrace(); // All of these stupid functions just throw way too many types of exceptions
         }
@@ -149,6 +156,19 @@ public class CryptoClient {
         send = concatenateByteArrays(send, data);
 
         return send;
+    }
+
+    private static void readAndPrint(InputStream is) {
+        try {
+            int a = is.read();
+            int b = is.read();
+            int c = is.read();
+            int d = is.read();
+            System.out.print("Received: ");
+            System.out.println("0x" + Integer.toString(a, 16) + Integer.toString(b, 16) + Integer.toString(c, 16) + Integer.toString(d, 16));
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
     }
 
     /**
