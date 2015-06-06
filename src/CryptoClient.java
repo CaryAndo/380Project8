@@ -5,6 +5,11 @@ import java.net.Socket;
 import java.security.Key;
 import java.security.interfaces.RSAPublicKey;
 
+/**
+ * CryptoClient: Project 8 CS 380
+ *
+ * @author Cary Anderson
+ * */
 public class CryptoClient {
 
     public static void main(String[] args) {
@@ -16,7 +21,7 @@ public class CryptoClient {
             ObjectOutputStream oj = new ObjectOutputStream(byteArrayOutputStream);
 
             Cipher cipher = Cipher.getInstance("RSA");
-            Key mySessionKey = KeyGenerator.getInstance("AES").generateKey(); // OUR VERY OWN SYMMETRIC AES Key
+            Key mySessionKey = KeyGenerator.getInstance("AES").generateKey(); // OUR VERY OWN SYMMETRIC AES KEY
 
             cipher.init(Cipher.ENCRYPT_MODE, teachersPublicKey); // Use the professor's public key to encrypt my key
             oj.writeObject(mySessionKey);
@@ -31,16 +36,17 @@ public class CryptoClient {
             Cipher cipher2 = Cipher.getInstance("AES");
             cipher2.init(Cipher.ENCRYPT_MODE, mySessionKey);
 
-            for (int i = 1; i < 10; i++) {
+            for (int i = 1; i < 11; i++) {
+                System.out.println("\nSending data size: " + (int) Math.pow((double)2, (double) i));
                 byte[] temp = new byte[(int) Math.pow((double)2, (double) i)];
                 for (int j = 0; j < temp.length; j++) {
                     temp[j] = 13;
                 }
+                long tempTime = System.nanoTime();
                 socket.getOutputStream().write(cipher2.doFinal(createPacket(temp, 38008)));
                 readAndPrint(socket.getInputStream());
+                System.out.println("RTT: " + (System.nanoTime() - tempTime)/1000000 + "ms");
             }
-            System.out.println("WE WON");
-
         } catch (Exception e) {
             e.printStackTrace(); // All of these stupid functions just throw way too many types of exceptions
         }
@@ -146,6 +152,11 @@ public class CryptoClient {
         return send;
     }
 
+    /**
+     * Given an input stream, read 4 bytes and print them
+     *
+     * @param is The input stream to read from
+     * */
     private static void readAndPrint(InputStream is) {
         try {
             int a = is.read();
